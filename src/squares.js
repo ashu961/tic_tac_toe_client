@@ -7,7 +7,10 @@ const Square=({value,takeStep,won})=>{
             variant={`${won ? 'contained' : 'outlined' }`}
             color={`${!value ? 'default' : value==='O' ? 'primary' : 'secondary'}`}
             style={{height:'90px',width:'90px',fontSize:'40px',margin:'2px'}} 
-            onClick={takeStep}
+            onClick={(e)=>{
+                e.preventDefault();
+                takeStep();
+            }}
 
         >
             {value}

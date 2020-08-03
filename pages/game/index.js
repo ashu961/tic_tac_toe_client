@@ -1,6 +1,6 @@
 import React,{useState,useEffect, Profiler} from 'react';
 import Square from '../../src/squares';
-import {Paper, Grid, Button, Container, Avatar, Typography, Dialog, DialogTitle, DialogContent, DialogActions} from '@material-ui/core';
+import {Paper, Grid, Button, Container, Avatar, Typography, Dialog, DialogTitle, DialogContent, DialogActions,CircularProgress,Backdrop} from '@material-ui/core';
 import {makeStyles} from '@material-ui/core/styles';
 import dynamic from 'next/dynamic';
 import io from "socket.io-client";
@@ -25,41 +25,61 @@ const useStyles = makeStyles({
         paddingBottom: 20,
         marginTop: '10px',
     },
+    backdrop: {
+        zIndex: 999,
+        color: '#fff',
+      },
 });
 let socket;
-const Board=({location})=>{
+const Board=()=>{
+    const { playerName, roomid, invite } = queryString.parse(window.location.search);
     const classes = useStyles();
     const [boardSquares,setBoardSquares]=useState(Array(9).fill(null));
     const [isXNext,setIsXNext]=useState(true);
+    const [playerCharacter,setPlayerCharacter]=useState(invite && invite=='true'? 'O':'X');
     const [winningSquares,setWinningSquares]=useState([]);
     const [status,setStatus]=useState('');
     const [showPopup,setShowPopup]=useState(false);
-    const [room, setRoom] = useState('');
-    const squares=[...boardSquares];
-
-
-    const takeStep=(index)=>{
+    const [room, setRoom] = useState(roomid);
+    const [name, setName] = useState(playerName);
+    const [waiting,setWaiting]=useState(invite && invite=='true'? true : false)
+    const takeStep=(index,opponent=false)=>{
+        let squares=[...boardSquares];
         if(squares[index] || calculateWinner(boardSquares)){
             return;
         }
-        squares[index]=isXNext ? 'X' : 'O';
-        setBoardSquares(squares);
         setIsXNext(!isXNext);
+        if(!opponent){
+            squares[index]=playerCharacter;
+            setBoardSquares(squares);
+            setWaiting(true);
+            socket.emit('turnPlayed',{index,by:name},(error)=>{
+                if(error){
+                    console.log(error)
+                }
+            })
+        }else{
+            squares[index]=playerCharacter=='X' ? 'O' : 'X';
+            setBoardSquares(squares);
+            setWaiting(false);
+        }
     };
 
 
     useEffect(() => {
+        console.log('acnan')
         socket = io('http://localhost:3001/');
-        const { name, room } = queryString.parse(location.search);
-        socket.emit('join', { name:'ashu',room:'room1' }, (error) => {
+        socket.emit('join', { name,room }, (error) => {
             if(error) {
               console.log(error)
             }
           });
         ////
         let winner=calculateWinner(boardSquares);
+        if(winner) setWaiting(false);
         if(!winner && !boardSquares.includes(null)){
             setStatus('DRAW');
+            setWaiting(false);
             setShowPopup(true);
             return;
         };
@@ -67,11 +87,14 @@ const Board=({location})=>{
       },[boardSquares]);
 
     useEffect(() => {
-    socket.on('message', message => {
-        console.log('message:',message)
+        console.log('baci')
+        socket.on('opponentsPlay', message => {
+        if(message.by==name){
+            return;
+        }
+        takeStep(message.index,true)
     });
-    
-    }, []);
+    }, [boardSquares,room,name]);
 
     const renderSquare=(index)=>{
        return <Square value={boardSquares[index]} takeStep={()=>takeStep(index)} won={winningSquares.length>0 && winningSquares.includes(index) ? true : false}/>
@@ -178,7 +201,7 @@ const Board=({location})=>{
                     </Grid>
                     <Grid item md={12} xs={12} md={12} >
                         <Button variant="contained" color='default' onClick={()=>{window.location.reload();}}>
-                            {'Reset game'}
+                            {'reaet game'}
                         </Button>
                     </Grid>
                 </Grid>
@@ -194,6 +217,14 @@ const Board=({location})=>{
                         </Button>
                 </DialogActions>
             </Dialog>
+            <Backdrop className={classes.backdrop} open={waiting}>
+                <div style={{display:'flex',flexDirection:'column',alignItems:'center',marginTop:'156px'}}>
+                    <Typography>
+                        Waiting for Opponent's turn
+                    </Typography>
+                    <CircularProgress style={{marginTop:'7px'}} color="inherit" />
+                    </div>
+            </Backdrop>
         </div>
     );
 }
