@@ -53,7 +53,7 @@ const Board=()=>{
             squares[index]=playerCharacter;
             setBoardSquares(squares);
             setWaiting(true);
-            socket.emit('turnPlayed',{index,by:name},(error)=>{
+            socket.emit('turnPlayed',{index,by:name,room},(error)=>{
                 if(error){
                     console.log(error)
                 }
@@ -220,7 +220,7 @@ const Board=()=>{
             <Backdrop className={classes.backdrop} open={waiting}>
                 <div style={{display:'flex',flexDirection:'column',alignItems:'center',marginTop:'156px'}}>
                     <Typography>
-                        Waiting for Opponent's turn
+                        {`Waiting for ${invite ? 'Player1 \'s' : 'Player2 \'s' } turn`}
                     </Typography>
                     <CircularProgress style={{marginTop:'7px'}} color="inherit" />
                     </div>
