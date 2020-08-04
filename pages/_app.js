@@ -1,10 +1,14 @@
 import App from 'next/app'
 import {useEffect} from 'react';
 import cookies from 'next-cookies';
-function MyApp({ Component, pageProps, ctx }) {
+import Axios from 'axios';
+import Login from '../pages/login'
+function MyApp({ Component, pageProps,user}) {
     // useEffect(()=>{
-
+      
     // },[]);
+    // console.log(user)
+    let newProps={...pageProps,user}
     return( 
         <>
         <style jsx global>{`
@@ -17,7 +21,10 @@ function MyApp({ Component, pageProps, ctx }) {
             sans-serif;
         }
     `}</style>
-    <Component {...pageProps} />
+    {
+      user ? <Component {...newProps} /> : <Login/>
+    }
+      
     </>
     );
   }
@@ -27,11 +34,18 @@ function MyApp({ Component, pageProps, ctx }) {
   // perform automatic static optimization, causing every page in your app to
   // be server-side rendered.
   //
-//   MyApp.getInitialProps = async (appContext) => {
-//     // calls page's `getInitialProps` and fills `appProps.pageProps`
-//     const appProps = await App.getInitialProps(appContext);
-//     const token = cookies(appContext.ctx)['ttts'] || null;
-//     return { ...appProps}
-//   }
+  MyApp.getInitialProps = async (appContext) => {
+    // calls page's `getInitialProps` and fills `appProps.pageProps`
+    const appProps = await App.getInitialProps(appContext);
+    const token = cookies(appContext.ctx)['jwt'] || null;
+    if(token){
+      let {data}=await Axios.get('http://localhost:3001/auth/me',{
+        headers: {
+          Authorization: 'Bearer '+token
+        }});
+      return { ...appProps,user:data}
+  }
+    return { ...appProps}
+  }
   
   export default MyApp

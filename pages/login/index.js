@@ -38,7 +38,7 @@ const Login=()=>{
                             </Typography>
                         </Grid>
                         <Grid item md={12} xs={12}>
-                            <Button variant='contained'>
+                            <Button variant='contained' href={'http://localhost:3001/auth/google'}>
                                 Login with Google
                             </Button>
                         </Grid>

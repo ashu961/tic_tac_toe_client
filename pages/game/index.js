@@ -31,7 +31,7 @@ const useStyles = makeStyles({
       },
 });
 let socket;
-const Board=()=>{
+const Board=({user})=>{
     const { playerName, roomid, invite } = queryString.parse(window.location.search);
     const classes = useStyles();
     const [boardSquares,setBoardSquares]=useState(Array(9).fill(null));
@@ -42,7 +42,10 @@ const Board=()=>{
     const [showPopup,setShowPopup]=useState(false);
     const [room, setRoom] = useState(roomid);
     const [name, setName] = useState(playerName);
-    const [waiting,setWaiting]=useState(invite && invite=='true'? true : false)
+    const [waiting,setWaiting]=useState(invite && invite=='true'? true : false);
+    const [isPlayer2,setIsPlayer2]=useState(invite && invite=='true'? true : false);
+    const [gameData, setGameData] = useState({});
+
     const takeStep=(index,opponent=false)=>{
         let squares=[...boardSquares];
         if(squares[index] || calculateWinner(boardSquares)){
@@ -53,7 +56,7 @@ const Board=()=>{
             squares[index]=playerCharacter;
             setBoardSquares(squares);
             setWaiting(true);
-            socket.emit('turnPlayed',{index,by:name,room},(error)=>{
+            socket.emit('turnPlayed',{index,by:user.name,room},(error)=>{
                 if(error){
                     console.log(error)
                 }
@@ -65,15 +68,23 @@ const Board=()=>{
         }
     };
 
-
-    useEffect(() => {
-        console.log('acnan')
+    useEffect(()=>{
         socket = io('http://localhost:3001/');
-        socket.emit('join', { name,room }, (error) => {
+        socket.emit('join', { googleID:user.sub,room,player1:!isPlayer2 }, (error) => {
             if(error) {
               console.log(error)
             }
           });
+    },[]);
+
+    useEffect(()=>{
+        socket.on('gameData', (message) => {
+            console.log('called')
+            setGameData(message.gameData);
+          });
+    },[boardSquares]);
+
+    useEffect(() => {
         ////
         let winner=calculateWinner(boardSquares);
         if(winner) setWaiting(false);
@@ -85,16 +96,19 @@ const Board=()=>{
         };
         setStatus(winner ? `The Winner is ${winner}` : isXNext ? `X's Turn` : `O's Turn`);
       },[boardSquares]);
-
+    
+    
     useEffect(() => {
-        console.log('baci')
         socket.on('opponentsPlay', message => {
-        if(message.by==name){
+            console.log('sn')
+        if(message.by==user.name){
+            return;
+        }else if(boardSquares.includes(message.index)){
             return;
         }
         takeStep(message.index,true)
     });
-    }, [boardSquares,room,name]);
+    }, [boardSquares,name,roomid]);
 
     const renderSquare=(index)=>{
        return <Square value={boardSquares[index]} takeStep={()=>takeStep(index)} won={winningSquares.length>0 && winningSquares.includes(index) ? true : false}/>
@@ -123,50 +137,19 @@ const Board=()=>{
         }
         return null;
     }
-    const player1={
-        "googleID" : "112324364941011675166",
-        "level": "2",
-        "userDetails" : {
-            "sub" : "112324364941011675166",
-            "name" : "ASHUTOSH BEHERA",
-            "given_name" : "ASHUTOSH",
-            "family_name" : "BEHERA",
-            "picture" : "https://lh3.googleusercontent.com/a-/AOh14Gi6donT_LMjc0aBOPfVH311r--TXFPKWpTnAB1ojw",
-            "email" : "beheraashutosh5@gmail.com",
-            "email_verified" : true,
-            "locale" : "en"
-        },
-        "__v" : 0
-    }
-    const player2={
-        "googleID" : "112324364941011675166",
-        "level": "3",
-        "userDetails" : {
-            "sub" : "112324364941011675166",
-            "name" : "ANKIT BEHERA",
-            "given_name" : "ASHUTOSH",
-            "family_name" : "BEHERA",
-            "picture" : "https://lh3.googleusercontent.com/a-/AOh14GhglgEFuFyPM2Lagd_Kn3-TnDoFRgmpt1QPCS3THw",
-            "email" : "beheraashutosh5@gmail.com",
-            "email_verified" : true,
-            "locale" : "en"
-        },
-        "__v" : 0
-    }
-
     return(
         <div className={classes.root}>
             <Container fixed style={{width:'370px'}}>
                 <Grid container spacing={2} style={{textAlign:'center'}}>
                     <Grid item md={12} xs={12} md={12} style={{textAlign:'start',display:'flex'}}>
                         <div style={{display:'flex'}}>
-                        <Avatar style={{borderStyle:'solid',border:'3px solid red'}} src={player1.userDetails.picture} />
+                        <Avatar style={{borderStyle:'solid',border:'3px solid red'}} src={gameData && gameData.playerOne ? gameData.playerOne.userDetails.picture : null} />
                         <div style={{padding:'0px 10px'}}>
                         <Typography style={{textTransform:'capitalize'}}>
-                            {player1.userDetails.name.toLowerCase()}
+                            {gameData && gameData.playerOne ? gameData.playerOne.userDetails.name.toLowerCase() : 'Player1' }
                         </Typography>
                         <Typography style={{fontSize:'14px'}}>
-                            {`Level : ${player1.level}`}
+                            {`Level : 1`}
                         </Typography>
                         </div>
                         </div>
@@ -176,13 +159,13 @@ const Board=()=>{
                     </Grid>
                     <Grid item md={12} xs={12} md={12} style={{flexDirection:'row-reverse',display:'flex'}}>
                     <div style={{display:'flex',flexDirection:'row-reverse'}}>
-                        <Avatar style={{borderStyle:'solid',border:'3px solid blue'}} src={player2.userDetails.picture} />
+                        <Avatar style={{borderStyle:'solid',border:'3px solid blue'}} src={gameData && gameData.playerTwo ? gameData.playerTwo.userDetails.picture : null} />
                         <div style={{padding:'0px 10px'}}>
                         <Typography style={{textTransform:'capitalize'}}>
-                            {player2.userDetails.name.toLowerCase()}
+                            {gameData && gameData.playerTwo ? gameData.playerTwo.userDetails.name.toLowerCase() : 'Player2' }
                         </Typography>
                         <Typography style={{textAlign:'end',fontSize:'14px'}}>
-                            {`Level : ${player2.level}`}
+                            {`Level : 1`}
                         </Typography>
                         </div>
                         </div> 
@@ -201,7 +184,7 @@ const Board=()=>{
                     </Grid>
                     <Grid item md={12} xs={12} md={12} >
                         <Button variant="contained" color='default' onClick={()=>{window.location.reload();}}>
-                            {'reaet game'}
+                            {'reset game'}
                         </Button>
                     </Grid>
                 </Grid>
