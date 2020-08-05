@@ -21,11 +21,11 @@ const CreateRoom=({onClickButton})=>{
                             <Typography>
                                 Share this RoomId with your friend:
                             </Typography>
-                            <TextField style={{maxWidth:'120px'}} className={classes.button} variant='outlined' value={roomId}>
+                            <TextField disabled style={{maxWidth:'120px'}} className={classes.button} variant='outlined' value={roomId}>
                             </TextField>
                             <Button variant='contained' className={classes.button} onClick={(e)=>{
                                 e.preventDefault();
-                                window.location.href=`http://localhost:3000/game?playerName=ashu&roomid=${roomId}`
+                                window.location.href=`http://localhost:3000/game?roomid=${roomId}`
                             }}>
                                 Start Game
                             </Button>

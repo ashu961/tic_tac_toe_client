@@ -24,7 +24,7 @@ const JoinRoom=({onClickButton})=>{
                             <TextField label="Room ID" variant="outlined" value={roomId} onChange={(e)=>{e.preventDefault();setRoomId(e.target.value)}} className={classes.button}/>
                             <Button variant='contained' className={classes.button} onClick={(e)=>{
                                 e.preventDefault();
-                                window.location.href=`http://localhost:3000/game?playerName=ashu&roomid=${roomId}&invite=true`
+                                window.location.href=`http://localhost:3000/game?&roomid=${roomId}&invite=true`
                             }}>
                                 Join the game
                             </Button>
